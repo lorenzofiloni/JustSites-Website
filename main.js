@@ -2,13 +2,9 @@
    JUSTSITES — JavaScript
    • Mesh Gradient Canvas Animation
    • Navbar scroll behavior
-   • Scroll-triggered card animations
-   • Pricing cards reveal
+   • Scroll-triggered card stack (Full Screen + Peeking Edges)
 ───────────────────────────────────────────── */
 
-/* ═══════════════════════════════════════════
-   1. MESH GRADIENT — Paper Design WebGL Shader
-══════════════════════════════════════════ */
 import {
   ShaderMount,
   meshGradientFragmentShader,
@@ -39,13 +35,11 @@ import {
   );
 })();
 
-
 /* ══════════════════════════════════════════
    2. NAVBAR SCROLL BEHAVIOR
 ══════════════════════════════════════════ */
 (function initNavbar() {
   const navbar = document.getElementById('navbar');
-
   window.addEventListener('scroll', () => {
     if (window.scrollY > 60) {
       navbar.classList.add('scrolled');
@@ -55,62 +49,81 @@ import {
   }, { passive: true });
 })();
 
-
 /* ══════════════════════════════════════════
-   3. SCROLL REVEAL — PROJECT CARDS (stacked file feel)
+   3. SCROLL REVEAL CARD STACK
 ══════════════════════════════════════════ */
-(function initCardReveal() {
-  const cards = document.querySelectorAll('.project-card');
+(function initCardStack() {
+  const slides = Array.from(document.querySelectorAll('.card-slide'));
+  if (!slides.length) return;
 
-  const observer = new IntersectionObserver(
-    (entries) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          // Stagger cards when multiple enter at once
-          const card = entry.target;
-          const delay = parseInt(card.dataset.index || 0) * 80;
-          setTimeout(() => {
-            card.classList.add('in-view');
-          }, delay);
-        }
+  const PEEK_STEP = 40; // visible edge at the bottom for each waiting card
+
+  function easeOutQuad(t) {
+    return t * (2 - t);
+  }
+
+  function updateCards() {
+    const vh = window.innerHeight;
+    const scrollY = window.scrollY;
+
+    slides.forEach((slide, i) => {
+      const card = slide.querySelector('.project-card') || slide.querySelector('.final-wrapper');
+      if (!card) return;
+
+      // The point in scroll where this slide reaches the top of the viewport
+      let slideTop = slide.offsetTop;
+      
+      // Calculate how far we are from pinning this slide
+      let delta = slideTop - scrollY;
+      
+      // Calculate how many px this card should peek from the bottom
+      // So Card 1 peeks highest, Card 4 peeks lowest
+      // actually: Card 0 doesn't wait, Card 1 waits at PEEK*3, Card 2 at PEEK*2 etc.
+      const cardsRemaining = slides.length - 1 - i;
+      const peekFromBottom = cardsRemaining * PEEK_STEP + 20; 
+      
+      const startViewportY = vh - peekFromBottom;
+
+      let y = 0;
+      if (delta >= vh) {
+        // We are more than 100vh away from this slide pinning.
+        // It should rest peeking at the bottom of the viewport.
+        y = startViewportY - delta;
+      } else if (delta > 0) {
+        // We are within 100vh of this slide pinning! It slides up over the previous pinned slide.
+        const progress = 1 - (delta / vh); // 0 to 1
+        const eased = easeOutQuad(progress); 
+        const currentViewportY = startViewportY * (1 - eased);
+        y = currentViewportY - delta;
+      } else {
+        // Fully pinned!
+        y = 0;
+      }
+
+      card.style.transform = `translateY(${y}px)`;
+    });
+  }
+
+  // Use RequestAnimationFrame for silky smooth 60fps scrolling
+  let ticking = false;
+  window.addEventListener('scroll', () => {
+    if (!ticking) {
+      requestAnimationFrame(() => {
+        updateCards();
+        ticking = false;
       });
-    },
-    {
-      threshold: 0.15,
-      rootMargin: '0px 0px -60px 0px',
+      ticking = true;
     }
-  );
+  }, { passive: true });
 
-  cards.forEach(card => observer.observe(card));
+  window.addEventListener('resize', updateCards, { passive: true });
+  
+  // Initial frame
+  updateCards();
 })();
 
-
 /* ══════════════════════════════════════════
-   4. SCROLL REVEAL — PRICING CARDS
-══════════════════════════════════════════ */
-(function initPricingReveal() {
-  const priceCards = document.querySelectorAll('.price-card');
-
-  const observer = new IntersectionObserver(
-    (entries) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add('in-view');
-        }
-      });
-    },
-    {
-      threshold: 0.12,
-      rootMargin: '0px 0px -40px 0px',
-    }
-  );
-
-  priceCards.forEach(card => observer.observe(card));
-})();
-
-
-/* ══════════════════════════════════════════
-   5. SMOOTH PARALLAX on hero headline
+   4. SMOOTH PARALLAX on hero headline
 ══════════════════════════════════════════ */
 (function initParallax() {
   const headline = document.querySelector('.hero-headline');
@@ -124,34 +137,18 @@ import {
   }, { passive: true });
 })();
 
-
 /* ══════════════════════════════════════════
-   6. CARD HOVER — 3D tilt effect
-══════════════════════════════════════════ */
-(function initTilt() {
-  // Full-width cards: only subtle lift, no perspective tilt
-  const cards = document.querySelectorAll('.project-card');
-  cards.forEach(card => {
-    card.addEventListener('mouseleave', () => {
-      card.style.transform = '';
-    });
-  });
-})();
-
-
-/* ══════════════════════════════════════════
-   7. PRICE CARD TILT
+   5. PRICE CARD TILT
 ══════════════════════════════════════════ */
 (function initPriceTilt() {
   const cards = document.querySelectorAll('.price-card');
-
   cards.forEach(card => {
     card.addEventListener('mousemove', (e) => {
-      const rect  = card.getBoundingClientRect();
-      const cx    = rect.left + rect.width / 2;
-      const cy    = rect.top  + rect.height / 2;
-      const dx    = (e.clientX - cx) / (rect.width / 2);
-      const dy    = (e.clientY - cy) / (rect.height / 2);
+      const rect = card.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top + rect.height / 2;
+      const dx = (e.clientX - cx) / (rect.width / 2);
+      const dy = (e.clientY - cy) / (rect.height / 2);
 
       const featured = card.classList.contains('featured');
       const baseY = featured ? -12 : -8;
