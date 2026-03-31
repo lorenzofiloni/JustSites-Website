@@ -149,6 +149,13 @@ body {
   z-index: 0;
 }
 
+/* ShaderMount creates an internal canvas — make sure it fills the container */
+#meshCanvas canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+}
+
 .hero-noise {
   position: absolute;
   inset: 0;
@@ -296,13 +303,15 @@ body {
 ══════════════════════════════════════════ */
 .projects {
   position: relative;
-  background: var(--c-bg);
-  padding: 120px 24px 80px;
+  background: transparent;
+  padding: 0;
 }
 
 .projects-label {
   text-align: center;
-  margin-bottom: 80px;
+  padding: 60px 24px 60px;
+  position: relative;
+  z-index: 5;
 }
 .projects-label span {
   font-size: 0.72rem;
@@ -318,26 +327,31 @@ body {
   display: flex;
   flex-direction: column;
   gap: 0;
-  max-width: 900px;
-  margin: 0 auto;
+  width: 100%;
   position: relative;
 }
 
 /* ── Project Card Base ── */
 .project-card {
   position: sticky;
-  top: 100px;
-  border-radius: var(--radius);
-  padding: 52px 60px;
+  top: 72px;
+  border-radius: 28px 28px 0 0;
+  padding: 64px max(60px, 8vw);
   overflow: hidden;
   cursor: pointer;
-  transform: translateY(80px) scale(0.96);
+  transform: translateY(100px) scale(0.98);
   opacity: 0;
   transition:
-    transform 0.7s cubic-bezier(0.16, 1, 0.3, 1),
-    opacity   0.7s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.75s cubic-bezier(0.16, 1, 0.3, 1),
+    opacity   0.75s cubic-bezier(0.16, 1, 0.3, 1),
     box-shadow 0.35s ease;
-  margin-bottom: 28px;
+  margin-bottom: 0;
+  /* Each card sits on top of previous one */
+  will-change: transform;
+  min-height: 340px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .project-card.in-view {
@@ -346,35 +360,35 @@ body {
 }
 
 .project-card:hover {
-  transform: translateY(-6px) scale(1.005) !important;
+  transform: translateY(-4px) !important;
 }
 
 /* ── Card Colors ── */
 .card-vision {
-  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-  border: 1px solid rgba(168,135,255,0.22);
-  box-shadow: 0 24px 80px rgba(0,0,0,0.55), 0 0 0 1px rgba(168,135,255,0.08);
+  background: linear-gradient(160deg, #1a1a2e 0%, #16213e 100%);
+  border-top: 1px solid rgba(168,135,255,0.22);
+  box-shadow: 0 -8px 60px rgba(0,0,0,0.6);
 }
 .card-vision:hover {
-  box-shadow: 0 32px 100px rgba(168,135,255,0.18), 0 0 0 1px rgba(168,135,255,0.2);
+  box-shadow: 0 -8px 60px rgba(168,135,255,0.18);
 }
 
 .card-p1 {
-  background: linear-gradient(135deg, #FF4060 0%, #FF1744 100%);
-  border: 1px solid rgba(255,64,96,0.4);
-  box-shadow: 0 24px 80px rgba(255,23,68,0.3), 0 0 0 1px rgba(255,255,255,0.08);
+  background: linear-gradient(160deg, #FF4060 0%, #FF1744 100%);
+  border-top: 1px solid rgba(255,100,120,0.4);
+  box-shadow: 0 -8px 60px rgba(255,23,68,0.3);
 }
 .card-p1:hover {
-  box-shadow: 0 32px 100px rgba(255,23,68,0.45);
+  box-shadow: 0 -8px 60px rgba(255,23,68,0.5);
 }
 
 .card-p2 {
-  background: linear-gradient(135deg, #FFB800 0%, #FF8C00 100%);
-  border: 1px solid rgba(255,184,0,0.4);
-  box-shadow: 0 24px 80px rgba(255,140,0,0.3), 0 0 0 1px rgba(255,255,255,0.08);
+  background: linear-gradient(160deg, #FFB800 0%, #FF8C00 100%);
+  border-top: 1px solid rgba(255,200,0,0.4);
+  box-shadow: 0 -8px 60px rgba(255,140,0,0.3);
 }
 .card-p2:hover {
-  box-shadow: 0 32px 100px rgba(255,140,0,0.45);
+  box-shadow: 0 -8px 60px rgba(255,140,0,0.5);
 }
 .card-p2 .card-number,
 .card-p2 .card-title,
@@ -384,12 +398,12 @@ body {
 .card-p2 .badge { background: rgba(0,0,0,0.12); color: rgba(0,0,0,0.65); }
 
 .card-p3 {
-  background: linear-gradient(135deg, #00E5A0 0%, #00C27A 100%);
-  border: 1px solid rgba(0,229,160,0.4);
-  box-shadow: 0 24px 80px rgba(0,194,122,0.3), 0 0 0 1px rgba(255,255,255,0.08);
+  background: linear-gradient(160deg, #00E5A0 0%, #00C27A 100%);
+  border-top: 1px solid rgba(0,229,160,0.4);
+  box-shadow: 0 -8px 60px rgba(0,194,122,0.3);
 }
 .card-p3:hover {
-  box-shadow: 0 32px 100px rgba(0,194,122,0.45);
+  box-shadow: 0 -8px 60px rgba(0,194,122,0.5);
 }
 .card-p3 .card-number,
 .card-p3 .card-title,
@@ -401,10 +415,11 @@ body {
 /* ── Card Inner Layout ── */
 .card-inner {
   display: flex;
-  gap: 48px;
-  align-items: flex-start;
+  gap: 60px;
+  align-items: center;
   position: relative;
   z-index: 2;
+  max-width: 1200px;
 }
 
 .card-left {
