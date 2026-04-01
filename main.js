@@ -40,14 +40,39 @@ import {
 ══════════════════════════════════════════ */
 (function initNavbar() {
   const navbar = document.getElementById('navbar');
-  window.addEventListener('scroll', () => {
-    if (window.scrollY > 60) {
+  const slides = Array.from(document.querySelectorAll('.card-slide'));
+
+  function updateNavbar() {
+    const scrollY = window.scrollY;
+
+    // Scrolled class
+    if (scrollY > 60) {
       navbar.classList.add('scrolled');
     } else {
       navbar.classList.remove('scrolled');
     }
-  }, { passive: true });
+
+    // Detect which slide is currently the "active" one covering the screen
+    // A slide is active when it's been scrolled past its top and the next hasn't started yet
+    let activeSurface = 'dark'; // default (hero or dark cards)
+
+    slides.forEach((slide) => {
+      const top = slide.offsetTop;
+      const vh = window.innerHeight;
+      // If we've scrolled past the point where this card has mostly filled the screen
+      if (scrollY >= top - vh * 0.2 && scrollY < top + vh * 0.8) {
+        const isLight = slide.dataset.light === 'true';
+        if (isLight) activeSurface = 'light';
+      }
+    });
+
+    navbar.dataset.surface = activeSurface;
+  }
+
+  window.addEventListener('scroll', updateNavbar, { passive: true });
+  updateNavbar();
 })();
+
 
 /* ══════════════════════════════════════════
    3. SCROLL REVEAL CARD STACK
@@ -138,7 +163,26 @@ import {
 })();
 
 /* ══════════════════════════════════════════
-   5. PRICE CARD TILT
+   5. PRICE CARD REVEAL
+══════════════════════════════════════════ */
+(function initPriceReveal() {
+  const priceCards = document.querySelectorAll('.price-card');
+  if (!priceCards.length) return;
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('in-view');
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
+
+  priceCards.forEach(c => observer.observe(c));
+})();
+
+/* ══════════════════════════════════════════
+   6. PRICE CARD TILT
 ══════════════════════════════════════════ */
 (function initPriceTilt() {
   const cards = document.querySelectorAll('.price-card');
@@ -151,7 +195,7 @@ import {
       const dy = (e.clientY - cy) / (rect.height / 2);
 
       const featured = card.classList.contains('featured');
-      const baseY = featured ? -12 : -8;
+      const baseY = featured ? 0 : -8;
 
       card.style.transform = `
         translateY(${baseY}px)
@@ -161,8 +205,7 @@ import {
     });
 
     card.addEventListener('mouseleave', () => {
-      const featured = card.classList.contains('featured');
-      card.style.transform = featured ? 'translateY(-12px)' : '';
+      card.style.transform = '';
     });
   });
 })();
